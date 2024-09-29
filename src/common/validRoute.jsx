@@ -11,7 +11,6 @@ import PaymentHistory from "../content/Paymenthistory.content";
 import HelpCenter from "../content/HelpCenter";
 import Profile from "../content/Profile";
 import ChangePass from "../content/ChangePass";
-import PaymentReceipt from "../content/PaymentReceipt";
 
 
 

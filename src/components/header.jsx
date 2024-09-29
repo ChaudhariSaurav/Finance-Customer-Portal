@@ -32,7 +32,7 @@ import { ref, onValue, remove } from "firebase/database"; // Import remove
 import { useNavigate } from "react-router-dom";
 import { userSignOut } from "../service/auth";
 
-const Header = ({ onToggleSidebar }) => {
+const Headers = ({ onToggleSidebar }) => {
   const { colorMode, toggleColorMode } = useColorMode();
   const appName = import.meta.env.VITE_APP_NAME || "Admin Panel";
   const [userData, setUserData] = useState("");
@@ -240,4 +240,4 @@ const Header = ({ onToggleSidebar }) => {
   );
 };
 
-export default Header;
+export default Headers;

@@ -21,7 +21,7 @@ import { bottomRoutes, dashboardRoutes } from '../stores/dashboardRoutes';
 
 
 
-const Sidebar = ({ isOpen }) => {
+const AppSIdebar = ({ isOpen }) => {
   const [openSubmenu, setOpenSubmenu] = useState(null);
   const location = useLocation();
   const navigate = useNavigate(); 
@@ -131,4 +131,4 @@ const Sidebar = ({ isOpen }) => {
   );
 };
 
-export default Sidebar;
+export default AppSIdebar;

@@ -506,10 +506,10 @@ const EmiDetails = () => {
                   photoURL={user.photoURL}
                   stampURL="https://ik.imagekit.io/xzgem7hpv/Ad%20FInance/stamp?updatedAt=1727545912474"
                   stampStyle={{
-                    width: '100px', // Set width for the stamp
-                    height: '100px', // Set height for the stamp
-                    borderRadius: '50%', // Make the stamp circular
-                    objectFit: 'cover', // Ensure the image fits within the circle
+                    width: '100px', 
+                    height: '100px', 
+                    borderRadius: '50%', 
+                    objectFit: 'cover',
                   }}
                 />
               </PDFViewer>

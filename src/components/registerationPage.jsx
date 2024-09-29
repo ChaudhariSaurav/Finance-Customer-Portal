@@ -53,7 +53,7 @@ const RegistrationForm = () => {
   const [errors, setErrors] = useState({});
   const [progress, setProgress] = useState(0);
 
-  const bgColor = useColorModeValue("white", "gray.700");
+  const bgColor = useColorModeValue("gray.50", "gray.900");
   const borderColor = useColorModeValue("gray.200", "gray.600");
 
   useEffect(() => {

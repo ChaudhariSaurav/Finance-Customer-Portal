@@ -1,7 +1,7 @@
 import React from 'react';
-import { Box, Flex, useDisclosure, useColorModeValue } from '@chakra-ui/react';
-import Header from '../components/header';
-import Sidebar from '../components/Sidebar';
+import { Box,  useDisclosure, useColorModeValue } from '@chakra-ui/react';
+import Headers from '../components/header';
+import AppSIdebar from '../components/sidebar';
 
 
 const AppLayout = ({ children }) => {
@@ -14,8 +14,8 @@ const AppLayout = ({ children }) => {
 
   return (
     <Box minH="100vh" bg={bgColor}>
-      <Header onToggleSidebar={onToggle} />
-      <Sidebar isOpen={isOpen} />
+      <Headers onToggleSidebar={onToggle} />
+      <AppSIdebar isOpen={isOpen} />
       <Box ml={{ base: 0, md: 60 }} p="4" transition="all 0.3s">
         <Box mt="70px" mb="60px" bg={contentBgColor} borderRadius="md" p={4} boxShadow="sm">
           {children}
