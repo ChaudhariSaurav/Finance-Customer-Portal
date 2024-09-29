@@ -16,9 +16,12 @@ import {
   Badge,
   Spinner,
   Text,
+  useColorModeValue,
+  useBreakpointValue,
+  Container,
 } from "@chakra-ui/react";
 import { FiSearch } from "react-icons/fi";
-import { LuEye } from "react-icons/lu";
+import { LuEye, LuPenSquare } from "react-icons/lu";
 import AppLayout from "../layout/AppShell";
 import Pagination from "../components/pagination";
 import { useNavigate } from "react-router-dom";
@@ -27,8 +30,18 @@ import { database } from "../config/firebase";
 import useDataStore from "../zustand/userDataStore";
 
 const monthNames = [
-  "January", "February", "March", "April", "May", "June",
-  "July", "August", "September", "October", "November", "December"
+  "January",
+  "February",
+  "March",
+  "April",
+  "May",
+  "June",
+  "July",
+  "August",
+  "September",
+  "October",
+  "November",
+  "December",
 ];
 
 const InstallmentPage = () => {
@@ -41,33 +54,70 @@ const InstallmentPage = () => {
   const [loading, setLoading] = useState(true);
   const itemsPerPage = 5;
 
+  const borderColor = useColorModeValue("gray.200", "gray.70");
+  const isMobile = useBreakpointValue({ base: true, md: false });
+
   const formatMonthFromDate = (dateString) => {
     const date = new Date(dateString);
-    return monthNames[date.getMonth()]; 
+    return monthNames[date.getMonth()];
   };
 
   const formatDate = (dateString) => {
     const date = new Date(dateString);
-    
-    const day = String(date.getDate()).padStart(2, '0'); // Get day and pad with zero if needed
+
+    const day = String(date.getDate()).padStart(2, "0"); // Get day and pad with zero if needed
     const monthNames = [
-      "January", "February", "March", "April", "May", "June", 
-      "July", "August", "September", "October", "November", "December"
+      "January",
+      "February",
+      "March",
+      "April",
+      "May",
+      "June",
+      "July",
+      "August",
+      "September",
+      "October",
+      "November",
+      "December",
     ];
     const month = monthNames[date.getMonth()]; // Get month name
     const year = date.getFullYear(); // Get full year
-  
+
     return `${day}-${month}-${year}`; // Return formatted date as DD-Month-YYYY
   };
 
-  const getStatusBadge = (status) => {
+  const badgeStyles = {
+    borderRadius: "15px",
+    px: 1, 
+    py: 1,
+    minWidth: "100px", // Set the minimum width for equal size
+    minHeight: "5px", // Set the minimum height for equal size
+    display: "inline-flex", // Ensures content is centered
+    alignItems: "center", // Vertical alignment
+    justifyContent: "center", // Horizontal alignment
+    fontSize: "sm",
+  };
+
+  const getStatusBadge  = (status) => {
     switch (status) {
       case "Paid":
-        return <Badge colorScheme="green">{status}</Badge>;
+        return (
+          <Badge {...badgeStyles} colorScheme="green">
+            {status}
+          </Badge>
+        );
       case "Pending":
-        return <Badge colorScheme="orange">{status}</Badge>;
+        return (
+          <Badge {...badgeStyles} colorScheme="orange">
+            {status}
+          </Badge>
+        );
       case "Upcoming":
-        return <Badge colorScheme="red">{status}</Badge>;
+        return (
+          <Badge {...badgeStyles} colorScheme="red">
+            {status}
+          </Badge>
+        );
       default:
         return null;
     }
@@ -83,13 +133,13 @@ const InstallmentPage = () => {
 
       if (snapshot.exists()) {
         const data = snapshot.val();
-        console.log("data", data)
-        const installmentArray = Object.keys(data).map(key => ({
+        console.log("data", data);
+        const installmentArray = Object.keys(data).map((key) => ({
           ...data[key],
           month: parseInt(key, 10),
         }));
         setInstallments(installmentArray);
-        console.log("instament", installments)
+        console.log("instament", installments);
       } else {
         setInstallments([]);
       }
@@ -103,8 +153,12 @@ const InstallmentPage = () => {
   const filteredData = installments.filter((installment) => {
     const matchesStatus =
       statusFilter === "All" || installment.status === statusFilter;
-    const dueMonthName = formatMonthFromDate(installment.dueDate || installment.paymentDate);
-    const matchesSearch = dueMonthName.toLowerCase().includes(searchTerm.toLowerCase());
+    const dueMonthName = formatMonthFromDate(
+      installment.dueDate || installment.paymentDate
+    );
+    const matchesSearch = dueMonthName
+      .toLowerCase()
+      .includes(searchTerm.toLowerCase());
     return matchesStatus && matchesSearch;
   });
 
@@ -117,7 +171,12 @@ const InstallmentPage = () => {
   return (
     <AppLayout>
       <Box p={4}>
-        <Heading mb={4}>Installment Management</Heading>
+      <Container maxW="container.xl" mb={8}>
+          <Heading as="h1" size="lg">
+            Installment Management
+          </Heading>
+          <Text mt={2}>View and manage your installments</Text>
+        </Container>
         <HStack mb={4}>
           <Select
             placeholder="Filter by status"
@@ -147,38 +206,52 @@ const InstallmentPage = () => {
         ) : (
           <>
             <Box
-              overflowX="auto"
-              maxH="60vh"
-              borderWidth="1px"
-              borderRadius="md"
-              mb={4}
+               overflowX="auto"
+               maxH="60vh"
+               borderWidth="1px"
+               borderRadius="md"
+              borderColor={borderColor}
+              mb={6}
             >
               <Table variant="simple">
                 <Thead>
                   <Tr>
-                    <Th>Installment Month</Th>
-                    <Th>Amount Due</Th>
+                    <Th>Month</Th>
+                    <Th>Amount</Th>
                     <Th>Status</Th>
-                    <Th>Due Date</Th>
-                    <Th>Payment Date</Th>
+                    {!isMobile && (
+                      <>
+                        <Th>Due Date</Th>
+                        <Th>Payment Date</Th>
+                      </>
+                    )}
                     <Th>Action</Th>
                   </Tr>
                 </Thead>
                 <Tbody>
                   {paginatedData.map((installment) => {
-                    const dueMonthName = formatMonthFromDate(installment.dueDate || installment.paymentDate);
-
+                    const dueMonthName = formatMonthFromDate(
+                      installment.dueDate
+                    );
                     return (
                       <Tr key={installment.month}>
                         <Td>{dueMonthName}</Td>
                         <Td>
-                          {installment.status === "Paid" 
-                            ? installment.amountPaid 
+                          {installment.status === "Paid"
+                            ? installment.amountPaid
                             : installment.amount.toFixed(2)}
                         </Td>
                         <Td>{getStatusBadge(installment.status)}</Td>
-                        <Td>{formatDate(installment.dueDate)}</Td>
-                        <Td>{formatDate(installment.paymentDate)}</Td>
+                        {!isMobile && (
+                          <>
+                            <Td>{formatDate(installment.dueDate)}</Td>
+                            <Td>
+                              {installment.paymentDate
+                                ? formatDate(installment.paymentDate)
+                                : "-"}
+                            </Td>
+                          </>
+                        )}
                         <Td>
                           <Button
                             onClick={() => {
@@ -190,10 +263,13 @@ const InstallmentPage = () => {
                               }
                             }}
                             variant="outline"
-                            colorScheme="blue"
-                            leftIcon={<LuEye />}
+                            colorScheme="green"
+                            size="sm"
+                            leftIcon={
+                              <Icon as={LuPenSquare} color="green.500" />
+                            }
                           >
-                            View
+                            {isMobile ? "" : "Details"}
                           </Button>
                         </Td>
                       </Tr>

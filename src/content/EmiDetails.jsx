@@ -14,7 +14,7 @@ import {
 } from "@chakra-ui/react";
 import { LuChevronLeft, LuCreditCard, LuPrinter, LuCalendar, LuClock, LuDollarSign, LuCheckCircle, LuAlertCircle } from "react-icons/lu";
 import { handlePayment, handlePaymentCallback } from "../service/auth";
-import { Document, Page, Text as PDFText, View, StyleSheet, PDFViewer, Image as PDFImage } from '@react-pdf/renderer';
+import { Document, Page, Text as PDFText, View, StyleSheet, PDFViewer, Image as PDFImage, PDFDownloadLink } from '@react-pdf/renderer';
 import { motion, AnimatePresence } from "framer-motion";
 
 // Define styles for PDF
@@ -32,13 +32,18 @@ const styles = StyleSheet.create({
   },
   subHeader1: {
     fontSize: 11,
-    // backgroundColor:"orange",
     textAlign:'center',
     textDecoration:'underline',
     marginBottom: 5,
   },
   subHeader: {
     fontSize: 11,
+    textAlign:'center',
+    textDecoration:'underline',
+    marginBottom: 5,
+  },
+  subHeaderS: {
+    fontSize: 7,
     textAlign:'center',
     textDecoration:'underline',
     marginBottom: 5,
@@ -92,19 +97,21 @@ const styles = StyleSheet.create({
     width: 100,
     height: 100,
     marginBottom: 10,
+    alignSelf: 'center',
   },
 });
 
 // PDF Document component
-const PaymentReceiptPDF = ({ customerName, customerId, payments, stampURL }) => (
+const PaymentReceiptPDF = ({ customerName, customerId, payments, stampURL, customerPhoto }) => (
   <Document>
     <Page size="A4" style={styles.page}>
       <PDFText style={styles.header}>J.R. GROUP'S MICROFINANCE</PDFText>
       <PDFText style={styles.subHeader1}>Basic Determination Of Microfinance</PDFText>
-      <PDFText style={styles.subHeader}>EMAIL: {customerName}</PDFText>
-      <PDFText style={styles.subHeader}>ORDER ID: {customerId}</PDFText>
-      <PDFText style={styles.subHeader}>PRINT DATE: {new Date().toLocaleString()}</PDFText>
+      <PDFText style={styles.subHeader}>NAME: {customerName}</PDFText>
+      <PDFText style={styles.subHeader}>CUSTOMER ID: {customerId}</PDFText>
+      <PDFText style={styles.subHeaderS}>PRINT DATE: {new Date().toLocaleString()}</PDFText>
       
+      {customerPhoto && <PDFImage src={customerPhoto} style={styles.customerPhoto} />}
     
       <View style={styles.table}>
         <View style={styles.tableRow}>
@@ -142,11 +149,11 @@ const PaymentReceiptPDF = ({ customerName, customerId, payments, stampURL }) => 
       <View style={styles.signatureRow}>
         <View style={styles.signatureBox}>
           <PDFText>B.M Signature</PDFText>
-          <PDFImage src="https://ik.imagekit.io/xzgem7hpv/Ad%20FInance/BM.png?updatedAt=1727546841801" style={{ width: 50, height: 20 }} />
+          <PDFImage src="https://ik.imagekit.io/xzgem7hpv/Ad%20FInance/BM.png?updatedAt=1727546841801" style={{ width: 100, height: 40 }} />
         </View>
         <View style={styles.signatureBox}>
           <PDFText>A.M Signature</PDFText>
-          <PDFImage src="https://ik.imagekit.io/xzgem7hpv/Ad%20FInance/AM.png?updatedAt=1727546250723" style={{ width: 50, height: 20 }} />
+          <PDFImage src="https://ik.imagekit.io/xzgem7hpv/Ad%20FInance/AM.png?updatedAt=1727546250723" style={{ width: 100, height: 40 }} />
         </View>
         <View style={styles.signatureBox}>
           <PDFText>Customer Signature</PDFText>
@@ -166,6 +173,7 @@ const EmiDetails = () => {
   const [paymentProcessing, setPaymentProcessing] = useState(false);
   const [showPDF, setShowPDF] = useState(false);
   const [paymentHistory, setPaymentHistory] = useState([]);
+  const [customerDetails, setCustomerDetails] = useState(null);
   const user = useDataStore((state) => state.user);
   const toast = useToast();
   const navigate = useNavigate();
@@ -211,6 +219,13 @@ const EmiDetails = () => {
       const historySnapshot = await get(historyRef);
       if (historySnapshot.exists()) {
         setPaymentHistory(historySnapshot.val());
+      }
+
+      // Fetch customer details
+      const customerRef = ref(database, `users/${user.uid}`);
+      const customerSnapshot = await get(customerRef);
+      if (customerSnapshot.exists()) {
+        setCustomerDetails(customerSnapshot.val());
       }
     } catch (err) {
       setError("Failed to fetch EMI details");
@@ -327,6 +342,18 @@ const EmiDetails = () => {
     );
   }
 
+  // fior download option
+  const monthNames = [
+    "January", "February", "March", "April", "May", "June",
+    "July", "August", "September", "October", "November", "December"
+  ];
+  
+  const formatMonthFromDate = (dateString) => {
+    const date = new Date(dateString);
+    return monthNames[date.getMonth()];
+  };
+  
+
   return (
     <AppLayout>
       <Container maxW="container.xl" p={4}>
@@ -369,7 +396,7 @@ const EmiDetails = () => {
                 <VStack align="stretch" spacing={4}>
                   <Stat>
                     <StatLabel>Customer ID</StatLabel>
-                    <StatNumber>{user.customerId}</StatNumber>
+                    <StatNumber>{customerDetails?.customerId || user.uid}</StatNumber>
                   </Stat>
                   <Stat>
                     <StatLabel>Amount {emi.status === "Paid" ? "Paid" : "Due"}</StatLabel>
@@ -493,29 +520,75 @@ const EmiDetails = () => {
             <ModalHeader>Payment Receipt</ModalHeader>
             <ModalCloseButton />
             <ModalBody>
-              <PDFViewer width="100%" height="800px">
+              <PDFViewer width="100%" height="400px">
                 <PaymentReceiptPDF
-                  customerName={user.email}
-                  customerId={user.uid}
-                  payments={[{
-                    date: formatDate(emi.paymentDate),
-                    installment: month,
-                    amount: emi.amountPaid,
-                    paymentId: emi.razorpay_id,
-                  }]}
-                  photoURL={user.photoURL}
+                  customerName={`${customerDetails?.firstName} ${customerDetails?.lastName}` || user.email}
+                  customerId={customerDetails?.customerId || user.uid}
+                  payments={[
+                    {
+                      date: formatDate(emi.paymentDate),
+                      installment: month,
+                      amount: emi.amountPaid || "",
+                      paymentId: emi.razorpay_id,
+                    },
+                    ...(paymentHistory.length > 0 ? [{
+                      date: formatDate(paymentHistory[paymentHistory.length - 1].paymentDate),
+                      installment: parseInt(month) + 1,
+                      amount: paymentHistory[paymentHistory.length - 1].amountPaid,
+                      paymentId: paymentHistory[paymentHistory.length - 1].razorpay_id,
+                    }] : [])
+                  ]}
+                  customerPhoto={customerDetails?.photoURL}
                   stampURL="https://ik.imagekit.io/xzgem7hpv/Ad%20FInance/stamp?updatedAt=1727545912474"
-                  stampStyle={{
-                    width: '100px', 
-                    height: '100px', 
-                    borderRadius: '50%', 
-                    objectFit: 'cover',
-                  }}
                 />
               </PDFViewer>
+
+              <PDFDownloadLink
+                document={
+              <PaymentReceiptPDF
+                customerName={`${customerDetails?.firstName} ${customerDetails?.lastName}` || user.email}
+                customerId={customerDetails?.customerId || user.uid}
+                payments={[
+                  {
+                    date: formatDate(emi.paymentDate),
+                    installment: month,
+                    amount: emi.amountPaid || "",
+                    paymentId: emi.razorpay_id,
+                  },
+                  ...(paymentHistory.length > 0
+                    ? [
+                        {
+                          date: formatDate(paymentHistory[paymentHistory.length - 1].paymentDate),
+                          installment: parseInt(month) + 1,
+                          amount: paymentHistory[paymentHistory.length - 1].amountPaid,
+                          paymentId: paymentHistory[paymentHistory.length - 1].razorpay_id,
+                        },
+                      ]
+                    : []),
+                ]}
+                customerPhoto={customerDetails?.photoURL}
+                stampURL="https://ik.imagekit.io/xzgem7hpv/Ad%20FInance/stamp?updatedAt=1727545912474"
+              />
+            }
+            // fileName="payment_receipt.pdf"
+            fileName={`Payment receipt ${formatMonthFromDate(emi.paymentDate)}.pdf`}
+          >
+            {({ loading }) =>
+              loading ? (
+                <Button isLoading colorScheme="blue" mt={4}>
+                  Generating PDF...
+                </Button>
+              ) : (
+                <Button colorScheme="blue" mt={4}>
+                  Download Receipt
+                </Button>
+              )
+            }
+          </PDFDownloadLink>
             </ModalBody>
           </ModalContent>
         </Modal>
+    
       </Container>
     </AppLayout>
   );

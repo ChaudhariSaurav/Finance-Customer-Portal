@@ -11,7 +11,6 @@ import {
   MenuButton,
   MenuList,
   MenuItem,
-  MenuDivider,
   Button,
   Modal,
   ModalOverlay,
