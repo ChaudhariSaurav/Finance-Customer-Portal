@@ -1,3 +1,5 @@
+"use client";
+
 import React, { useState, useEffect, useCallback } from "react";
 import { useParams, Link as RouterLink, useNavigate } from "react-router-dom";
 import { ref, get, set, update } from "firebase/database";
@@ -5,177 +7,418 @@ import { database } from "../config/firebase";
 import useDataStore from "../zustand/userDataStore";
 import AppLayout from "../layout/AppShell";
 import {
-  Box, Heading, Text, Button, VStack, Breadcrumb, BreadcrumbItem, BreadcrumbLink,
-  useColorModeValue, Image, Spinner, Alert, AlertIcon, Badge, SimpleGrid,
-  Stat, StatLabel, StatNumber, StatHelpText, useToast, Container, Modal,
-  ModalOverlay, ModalContent, ModalHeader, ModalBody, ModalCloseButton, Flex,
-  Progress, Tooltip, useDisclosure, Accordion, AccordionItem, AccordionButton,
-  AccordionPanel, AccordionIcon, Table, Thead, Tbody, Tr, Th, Td
+  Box,
+  Heading,
+  Text,
+  Button,
+  VStack,
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  useColorModeValue,
+  Image,
+  Spinner,
+  Alert,
+  AlertIcon,
+  Badge,
+  SimpleGrid,
+  Stat,
+  StatLabel,
+  StatNumber,
+  StatHelpText,
+  useToast,
+  Container,
+  Modal,
+  ModalOverlay,
+  ModalContent,
+  ModalHeader,
+  ModalBody,
+  ModalCloseButton,
+  Flex,
+  Progress,
+  Tooltip,
+  useDisclosure,
+  Accordion,
+  AccordionItem,
+  AccordionButton,
+  AccordionPanel,
+  AccordionIcon,
+  Table,
+  Thead,
+  Tbody,
+  Tr,
+  Th,
+  Td,
+  Checkbox,
+  Icon,
 } from "@chakra-ui/react";
-import { LuChevronLeft, LuCreditCard, LuPrinter, LuCalendar, LuClock, LuDollarSign, LuCheckCircle, LuAlertCircle } from "react-icons/lu";
-import { handlePayment, handlePaymentCallback } from "../service/auth";
-import { Document, Page, Text as PDFText, View, StyleSheet, PDFViewer, Image as PDFImage, PDFDownloadLink } from '@react-pdf/renderer';
+import {
+  LuChevronLeft,
+  LuCreditCard,
+  LuPrinter,
+  LuCalendar,
+  LuClock,
+  LuDollarSign,
+  LuCheckCircle,
+  LuAlertCircle,
+  LuDownload,
+  LuIndianRupee,
+} from "react-icons/lu";
+import { handlePayment } from "../service/auth";
+import {
+  Document,
+  Page,
+  Text as PDFText,
+  View,
+  StyleSheet,
+  PDFViewer,
+  Image as PDFImage,
+  PDFDownloadLink,
+} from "@react-pdf/renderer";
 import { motion, AnimatePresence } from "framer-motion";
-import QRCode from 'qrcode';
-import ReactQRCode from 'react-qr-code';
+import QRCode from "qrcode";
+import { Font } from "@react-pdf/renderer";
 
-// Define styles for PDF
+// Register a Unicode-compatible font
+Font.register({
+  family: "Roboto",
+  src: "https://cdnjs.cloudflare.com/ajax/libs/ink/3.1.10/fonts/Roboto/roboto-light-webfont.ttf",
+});
+
+const watermarkURL =
+  "https://ik.imagekit.io/laxmifinance/IMG-20240603-WA0018.jpg?updatedAt=1720653923997";
+
+// Styles for the PDF
 const styles = StyleSheet.create({
   page: {
-    flexDirection: 'column',
-    backgroundColor: '#FFFFFF',
+    flexDirection: "column",
+    backgroundColor: "#FFFFFF",
     padding: 30,
+    fontFamily: "Roboto",
   },
   header: {
-    fontSize: 18,
-    marginBottom: 10,
-    textAlign: 'center',
-    fontWeight: 'bold',
-  },
-  subHeader1: {
-    fontSize: 11,
-    textAlign:'center',
-    textDecoration:'underline',
-    marginBottom: 5,
+    fontSize: 24,
+    marginBottom: 20,
+    textAlign: "center",
+    color: "#1a365d",
+    fontWeight: "bold",
   },
   subHeader: {
-    fontSize: 11,
-    textAlign:'center',
-    textDecoration:'underline',
-    marginBottom: 5,
-  },
-  subHeaderS: {
-    fontSize: 7,
-    textAlign:'center',
-    textDecoration:'underline',
-    marginBottom: 5,
+    fontSize: 14,
+    textAlign: "center",
+    fontWeight: "bold",
+    marginBottom: 10,
+    color: "#2a4365",
   },
   table: {
-    display: 'table',
-    width: 'auto',
-    borderStyle: 'solid',
+    display: "table",
+    width: "auto",
+    borderStyle: "solid",
     borderWidth: 1,
     borderRightWidth: 0,
     borderBottomWidth: 0,
-    marginTop: 10,
+    marginTop: 20,
   },
-  tableRow: { 
-    flexDirection: 'row',
+  tableRow: {
+    flexDirection: "row",
   },
-  tableCol: { 
-    width: '25%',
-    borderStyle: 'solid',
+  tableCol: {
+    width: "25%",
+    borderStyle: "solid",
     borderWidth: 1,
     borderLeftWidth: 0,
     borderTopWidth: 0,
   },
   tableCell: {
-    margin: 'auto',
+    margin: "auto",
     marginTop: 5,
     fontSize: 10,
     padding: 5,
   },
   signatureRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: 50,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginTop: 30,
   },
   signatureBox: {
     borderTopWidth: 1,
-    borderColor: '#000000',
-    width: '30%',
-    paddingTop: 5,
-    fontSize: 10,
-    textAlign: 'center',
+    borderColor: "#2a4365",
+    width: "30%",
+    paddingTop: 10,
+    fontSize: 12,
+    textAlign: "center",
+    color: "#2a4365",
   },
   stamp: {
     width: 100,
     height: 100,
-    position: 'absolute',
-    top: 30,
+    position: "absolute",
+    top: 150,
     right: 30,
+    opacity: 0.7,
   },
   customerPhoto: {
     width: 100,
     height: 100,
-    marginBottom: 10,
-    alignSelf: 'center',
+    marginBottom: 20,
+    alignSelf: "center",
+    borderRadius: 50, // Ensures a circular image
+    objectFit: "cover", // Ensures the image fits well in the bounds
   },
+
   qrCode: {
-    position: 'absolute',
-    top: 30,
+    position: "absolute",
+    top: 150,
     left: 30,
     width: 100,
     height: 100,
   },
+
+  termsAndConditionsHeader: {
+    fontSize: 12,
+    marginTop: 30,
+    marginBottom: 10,
+    textAlign: "center",
+    borderTopColor: "#000000",
+  },
+
+  termsAndConditions: {
+    fontSize: 10,
+    marginBottom: 30,
+    textAlign: "justify",
+    color: "#4a5568",
+  },
+
+  footer: {
+    position: "absolute",
+    bottom: 30,
+    left: 30,
+    right: 30,
+    fontSize: 10,
+    flexDirection: "row",
+    justifyContent: "space-between",
+  },
+
+  watermark: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    opacity: 0.1,
+    zIndex: -1,
+  },
 });
 
 // PDF Document component
-const PaymentReceiptPDF = ({ customerName, customerId, payments, stampURL, customerPhoto, qrCodeData }) => (
-  <Document>
-    <Page size="A4" style={styles.page}>
-      {qrCodeData && (
-        <View style={styles.qrCode}>
-          <PDFImage src={qrCodeData} />
-        </View>
-      )}
-      <PDFText style={styles.header}>J.R. GROUP'S MICROFINANCE</PDFText>
-      <PDFText style={styles.subHeader1}>Basic Determination Of Microfinance</PDFText>
-      <PDFText style={styles.subHeader}>NAME: {customerName}</PDFText>
-      <PDFText style={styles.subHeader}>CUSTOMER ID: {customerId}</PDFText>
-      <PDFText style={styles.subHeaderS}>PRINT DATE: {new Date().toLocaleString()}</PDFText>
-      
-      {customerPhoto && <PDFImage src={customerPhoto} style={styles.customerPhoto} />}
-    
-      <View style={styles.table}>
-        <View style={styles.tableRow}>
-          <View style={styles.tableCol}>
-            <PDFText style={styles.tableCell}>Payment Date</PDFText>
-          </View>
-          <View style={styles.tableCol}>
-            <PDFText style={styles.tableCell}>Installment</PDFText>
-          </View>
-          <View style={styles.tableCol}>
-            <PDFText style={styles.tableCell}>Amount Paid</PDFText>
-          </View>
-          <View style={styles.tableCol}>
-            <PDFText style={styles.tableCell}>Payment ID</PDFText>
-          </View>
-        </View>
-        {payments.map((payment, index) => (
-          <View style={styles.tableRow} key={index}>
-            <View style={styles.tableCol}>
-              <PDFText style={styles.tableCell}>{payment.date}</PDFText>
-            </View>
-            <View style={styles.tableCol}>
-              <PDFText style={styles.tableCell}>{payment.installment}</PDFText>
-            </View>
-            <View style={styles.tableCol}>
-              <PDFText style={styles.tableCell}>₹{payment.amount}</PDFText>
-            </View>
-            <View style={styles.tableCol}>
-              <PDFText style={styles.tableCell}>{payment.paymentId}</PDFText>
-            </View>
-          </View>
-        ))}
-      </View>
+const PaymentReceiptPDF = ({
+  customerName,
+  customerId,
+  payments,
+  stampURL,
+  customerPhoto,
+  qrCodeData,
+  month,
+}) => {
+  const currentDate = new Date();
+  const formattedDate = `${currentDate
+    .getDate()
+    .toString()
+    .padStart(2, "0")}-${currentDate.toLocaleString("default", {
+    month: "long",
+  })}-${currentDate.getFullYear()}`;
+  const formattedTime = currentDate.toLocaleTimeString("en-US", {
+    hour12: false,
+  });
 
-      <View style={styles.signatureRow}>
-        <View style={styles.signatureBox}>
-          <PDFText>B.M Signature</PDFText>
-        </View>
-        <View style={styles.signatureBox}>
-          <PDFText>A.M Signature</PDFText>
-        </View>
-        <View style={styles.signatureBox}>
-          <PDFText>Customer Signature</PDFText>
-        </View>
-      </View>
+  return (
+    <Document>
+      <Page size="A4" style={styles.page}>
+        <PDFImage src={watermarkURL} style={styles.watermark} />
 
-      {stampURL && <PDFImage src={stampURL} style={styles.stamp} />}
-    </Page>
-  </Document>
-);
+        {qrCodeData && (
+          <View style={styles.qrCode}>
+            <PDFImage src={qrCodeData} />
+          </View>
+        )}
+        <PDFText style={styles.header}>J.R. GROUP'S MICROFINANCE</PDFText>
+        <PDFText style={styles.subHeader}>Payment Receipt</PDFText>
+        <PDFText style={styles.subHeader}>
+          Customer Name: {customerName}
+        </PDFText>
+        <PDFText style={styles.subHeader}>Customer ID: {customerId}</PDFText>
+
+        {customerPhoto && (
+          <PDFImage
+            src={customerPhoto}
+            style={styles.customerPhoto}
+            onLoad={() => console.log("Image loaded successfully")}
+            onError={() => console.log("Error loading image")}
+          />
+        )}
+
+        <View style={styles.table}>
+          <View style={[styles.tableRow, { backgroundColor: "#2a4365" }]}>
+            <View style={styles.tableCol}>
+              <PDFText
+                style={[
+                  styles.tableCell,
+                  { color: "white", fontWeight: "bold" },
+                ]}
+              >
+                Payment Date
+              </PDFText>
+            </View>
+            <View style={styles.tableCol}>
+              <PDFText
+                style={[
+                  styles.tableCell,
+                  { color: "white", fontWeight: "bold" },
+                ]}
+              >
+                Installment Month
+              </PDFText>
+            </View>
+            <View style={styles.tableCol}>
+              <PDFText
+                style={[
+                  styles.tableCell,
+                  { color: "white", fontWeight: "bold" },
+                ]}
+              >
+                Amount Paid
+              </PDFText>
+            </View>
+            <View style={styles.tableCol}>
+              <PDFText
+                style={[
+                  styles.tableCell,
+                  { color: "white", fontWeight: "bold" },
+                ]}
+              >
+                Payment ID
+              </PDFText>
+            </View>
+          </View>
+          {payments.map((payment, index) => (
+            <View
+              style={[
+                styles.tableRow,
+                { backgroundColor: index % 2 === 0 ? "#f0f4f8" : "#e2e8f0" },
+              ]}
+              key={index}
+            >
+              <View style={styles.tableCol}>
+                <PDFText style={styles.tableCell}>{payment.date}</PDFText>
+              </View>
+              <View style={styles.tableCol}>
+                <PDFText style={styles.tableCell}>
+                  {payment.installment}
+                </PDFText>
+              </View>
+              <View style={styles.tableCol}>
+                <PDFText style={styles.tableCell}>Rs {payment.amount}</PDFText>
+              </View>
+              <View style={styles.tableCol}>
+                <PDFText style={styles.tableCell}>{payment.paymentId}</PDFText>
+              </View>
+            </View>
+          ))}
+        </View>
+
+        <View style={styles.signatureRow}>
+          <View style={styles.signatureBox}>
+            <PDFText>B.M Signature</PDFText>
+          </View>
+          <View style={styles.signatureBox}>
+            <PDFText>A.M Signature</PDFText>
+          </View>
+          <View style={styles.signatureBox}>
+            <PDFText>Customer Signature</PDFText>
+          </View>
+        </View>
+
+        <View
+          style={{
+            ...styles.termsAndConditionsHeader,
+            color: "#4a5568",
+            fontWeight: "extrabold",
+          }}
+        >
+          <PDFText>Terms and Conditions:</PDFText>
+        </View>
+        <View
+          style={{
+            ...styles.termsAndConditions,
+            marginBottom: 20,
+            padding: 5,
+            color: "#4a5568",
+          }}
+        >
+          <PDFText style={{ marginBottom: 10 }}>
+            1.{" "}
+            <PDFText style={{ fontWeight: "bold" }}>
+              Accuracy of Information:
+            </PDFText>{" "}
+            I hereby agree and declare that the information provided above is
+            true and correct to the best of my knowledge and belief. I also
+            declare that I have not withheld any information regarding any
+            losses. If any information mentioned above is found to be false or
+            any important information is found to have been withheld, I
+            understand that I may be held legally responsible for it.
+          </PDFText>
+          <PDFText style={{ marginBottom: 10 }}>
+            2.{" "}
+            <PDFText style={{ fontWeight: "bold" }}>
+              Cooperation with Investigation:
+            </PDFText>{" "}
+            I fully agree with this matter and will cooperate with the
+            investigation conducted by you. If any additional information is
+            found during this process, I will not object to it, and appropriate
+            action can be taken by you.
+          </PDFText>
+          <PDFText style={{ marginBottom: 10 }}>
+            3.{" "}
+            <PDFText style={{ fontWeight: "bold" }}>
+              Agreement to Conditions:
+            </PDFText>{" "}
+            I agree to these conditions and understand that they can be changed
+            by you at any time. I will abide by the amended rules or conditions.
+          </PDFText>
+          <PDFText style={{ marginBottom: 10 }}>
+            4.{" "}
+            <PDFText style={{ fontWeight: "bold" }}>
+              Compliance and Responsibility:
+            </PDFText>{" "}
+            I respectfully accept the above rules and conditions for myself and
+            on behalf of my family members. I will fully comply with the
+            regulations made by you and will always be ready to repay this debt
+            in installments as per your instructions.
+          </PDFText>
+          <PDFText style={{ marginBottom: 10 }}>
+            5.{" "}
+            <PDFText style={{ fontWeight: "bold" }}>
+              This receipt is subject to the terms and conditions of the loan
+              agreement. Please retain this receipt for your records. For any
+              queries, contact our customer support.
+            </PDFText>
+          </PDFText>
+        </View>
+
+        <View fixed style={styles.footer}>
+          <PDFText
+            render={({ pageNumber, totalPages }) =>
+              `Page ${pageNumber} of ${totalPages}`
+            }
+          />
+          <PDFText>{`${formattedDate} ${formattedTime}`}</PDFText>
+        </View>
+
+        {stampURL && <PDFImage src={stampURL} style={styles.stamp} />}
+      </Page>
+    </Document>
+  );
+};
 
 const EmiDetails = () => {
   const { month } = useParams();
@@ -187,6 +430,7 @@ const EmiDetails = () => {
   const [paymentHistory, setPaymentHistory] = useState([]);
   const [customerDetails, setCustomerDetails] = useState(null);
   const [qrCodeData, setQRCodeData] = useState(null);
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
   const user = useDataStore((state) => state.user);
   const toast = useToast();
   const navigate = useNavigate();
@@ -213,7 +457,7 @@ const EmiDetails = () => {
     try {
       const emiRef = ref(database, `CustomerInstallment/${user.uid}/${month}`);
       const snapshot = await get(emiRef);
-  
+
       if (snapshot.exists()) {
         setEmi({ ...snapshot.val(), month: parseInt(month, 10) });
       } else {
@@ -263,7 +507,9 @@ const EmiDetails = () => {
     const generateQR = async () => {
       if (emi && customerDetails) {
         const data = {
-          customerName: `${customerDetails?.firstName} ${customerDetails?.lastName}` || user.email,
+          customerName:
+            `${customerDetails?.firstName} ${customerDetails?.lastName}` ||
+            user.email,
           customerId: customerDetails?.customerId || user.uid,
           payments: [
             {
@@ -272,7 +518,6 @@ const EmiDetails = () => {
               amount: emi.amountPaid || "",
               paymentId: emi.razorpay_id,
             },
-            // ... other payments ...
           ],
         };
         const qrCode = await generateQRCode(data);
@@ -284,25 +529,43 @@ const EmiDetails = () => {
   }, [customerDetails, emi, month, user.email]);
 
   const handleMakePayment = async () => {
-    if (!user || !emi) return;
+    if (!user || !emi || !acceptedTerms) {
+      toast({
+        title: "Terms and Conditions",
+        description:
+          "Please accept the terms and conditions before proceeding with the payment.",
+        status: "warning",
+        duration: 5000,
+        isClosable: true,
+      });
+      return;
+    }
     setPaymentProcessing(true);
     try {
-      const result = await handlePayment(user.uid, emi.month, emi.amount, toast);
-  
+      const result = await handlePayment(
+        user.uid,
+        emi.month,
+        emi.amount,
+        toast
+      );
+
       if (result.success) {
         const updatedData = {
           ...emi,
           status: "Paid",
           paymentDate: new Date().toISOString(),
           paymentId: result.response.razorpay_payment_id,
-        };   
-      
-        await update(ref(database, `CustomerInstallment/${user.uid}/${month}`), updatedData);
+        };
+
+        await update(
+          ref(database, `CustomerInstallment/${user.uid}/${month}`),
+          updatedData
+        );
         await update(ref(database, `users/${user.uid}/paymentStatus`), {
           lastPayment: updatedData.paymentDate,
           status: "Paid",
         });
-  
+
         setEmi(updatedData);
         toast({
           title: "Payment Successful",
@@ -315,7 +578,10 @@ const EmiDetails = () => {
         // Update payment history
         const newPaymentHistory = [...paymentHistory, updatedData];
         setPaymentHistory(newPaymentHistory);
-        await set(ref(database, `users/${user.uid}/paymentHistory`), newPaymentHistory);
+        await set(
+          ref(database, `users/${user.uid}/paymentHistory`),
+          newPaymentHistory
+        );
 
         // Refresh EMI details
         fetchEmiDetails();
@@ -324,7 +590,9 @@ const EmiDetails = () => {
       console.error("Payment error:", error);
       toast({
         title: "Payment Failed",
-        description: error.message || "There was an issue processing your payment. Please try again.",
+        description:
+          error.message ||
+          "There was an issue processing your payment. Please try again.",
         status: "error",
         duration: 5000,
         isClosable: true,
@@ -362,16 +630,26 @@ const EmiDetails = () => {
       const qrCodeDataURL = await QRCode.toDataURL(JSON.stringify(data));
       return qrCodeDataURL;
     } catch (error) {
-      console.error('Error generating QR code:', error);
+      console.error("Error generating QR code:", error);
       return null;
     }
   };
 
   const monthNames = [
-    "January", "February", "March", "April", "May", "June",
-    "July", "August", "September", "October", "November", "December"
+    "January",
+    "February",
+    "March",
+    "April",
+    "May",
+    "June",
+    "July",
+    "August",
+    "September",
+    "October",
+    "November",
+    "December",
   ];
-  
+
   const formatMonthFromDate = (dateString) => {
     const date = new Date(dateString);
     return monthNames[date.getMonth()];
@@ -416,7 +694,7 @@ const EmiDetails = () => {
             <BreadcrumbLink href="#">Installment {month}</BreadcrumbLink>
           </BreadcrumbItem>
         </Breadcrumb>
-  
+
         <AnimatePresence>
           <MotionBox
             initial={{ opacity: 0, y: 20 }}
@@ -436,26 +714,34 @@ const EmiDetails = () => {
                   Installment Details for Month {month}
                 </Heading>
               </Flex>
-  
+
               <SimpleGrid columns={{ base: 1, md: 2 }} spacing={10}>
                 <VStack align="stretch" spacing={4}>
                   <Stat>
                     <StatLabel>Customer ID</StatLabel>
-                    <StatNumber>{customerDetails?.customerId || user.uid}</StatNumber>
+                    <StatNumber>
+                      {customerDetails?.customerId || user.uid}
+                    </StatNumber>
                   </Stat>
                   <Stat>
-                    <StatLabel>Amount {emi.status === "Paid" ? "Paid" : "Due"}</StatLabel>
-                    <StatNumber>₹{emi.amount !== undefined ? emi.amount.toFixed(2) : 0}</StatNumber>
+                    <StatLabel>
+                      Amount {emi.status === "Paid" ? "Paid" : "Due"}
+                    </StatLabel>
+                    <StatNumber>
+                      ₹{emi.amount !== undefined ? emi.amount.toFixed(2) : 0}
+                    </StatNumber>
                   </Stat>
                   <Stat>
                     <StatLabel>Status</StatLabel>
                     <StatNumber>{getStatusBadge(emi.status)}</StatNumber>
                   </Stat>
                   <Stat>
-                    <StatLabel>{emi.status === "Paid" ? "Paid On" : "Due Date"}</StatLabel>
+                    <StatLabel>
+                      {emi.status === "Paid" ? "Paid On" : "Due Date"}
+                    </StatLabel>
                     <StatNumber>
-                      {emi.status === "Paid" 
-                        ? formatDate(emi.paymentDate) 
+                      {emi.status === "Paid"
+                        ? formatDate(emi.paymentDate)
                         : formatDate(emi.dueDate)}
                     </StatNumber>
                   </Stat>
@@ -466,7 +752,7 @@ const EmiDetails = () => {
                     </Stat>
                   )}
                 </VStack>
-  
+
                 <VStack align="stretch" spacing={4}>
                   {emi.status === "Paid" ? (
                     <Button
@@ -479,23 +765,32 @@ const EmiDetails = () => {
                       Print Receipt
                     </Button>
                   ) : (
-                    <Button
-                      leftIcon={<LuCreditCard />}
-                      colorScheme="blue"
-                      onClick={handleMakePayment}
-                      size="lg"
-                      isLoading={paymentProcessing}
-                      loadingText="Processing Payment"
-                      width="100%"
-                    >
-                      Make Payment
-                    </Button>
+                    <>
+                      <Button
+                        leftIcon={<LuCreditCard />}
+                        colorScheme="blue"
+                        onClick={handleMakePayment}
+                        size="lg"
+                        isLoading={paymentProcessing}
+                        loadingText="Processing Payment"
+                        width="100%"
+                        isDisabled={!acceptedTerms}
+                      >
+                        Make Payment
+                      </Button>
+                      <Checkbox
+                        isChecked={acceptedTerms}
+                        onChange={(e) => setAcceptedTerms(e.target.checked)}
+                      >
+                        I accept the terms and conditions
+                      </Checkbox>
+                    </>
                   )}
                   <Text fontSize="sm" color={textColor}>
                     Please ensure timely payment to avoid late fees.
                   </Text>
                   <Progress
-                    value={(emi.status === "Paid" ? 100 : 0)}
+                    value={emi.status === "Paid" ? 100 : 0}
                     colorScheme={emi.status === "Paid" ? "green" : "orange"}
                     size="sm"
                     borderRadius="full"
@@ -509,13 +804,17 @@ const EmiDetails = () => {
                     </Tooltip>
                     <Tooltip label="Amount" placement="top">
                       <Box>
-                        <LuDollarSign />
-                        <Text fontSize="xs">₹{emi.amount}</Text>
+                        <LuIndianRupee />
+                        <Text fontSize="xs">{emi.amount !== undefined ? emi.amount.toFixed(2) : 0}</Text>
                       </Box>
                     </Tooltip>
                     <Tooltip label="Status" placement="top">
                       <Box>
-                        {emi.status === "Paid" ? <LuCheckCircle color="green" /> : <LuAlertCircle color="orange" />}
+                        {emi.status === "Paid" ? (
+                          <LuCheckCircle color="green" />
+                        ) : (
+                          <LuAlertCircle color="orange" />
+                        )}
                         <Text fontSize="xs">{emi.status}</Text>
                       </Box>
                     </Tooltip>
@@ -567,7 +866,10 @@ const EmiDetails = () => {
             <ModalBody>
               <PDFViewer width="100%" height="400px">
                 <PaymentReceiptPDF
-                  customerName={`${customerDetails?.firstName} ${customerDetails?.lastName}` || user.email}
+                  customerName={
+                    `${customerDetails?.firstName} ${customerDetails?.lastName}` ||
+                    user.email
+                  }
                   customerId={customerDetails?.customerId || user.uid}
                   payments={[
                     {
@@ -577,16 +879,30 @@ const EmiDetails = () => {
                       paymentId: emi.razorpay_id,
                     },
                     ...(paymentHistory.length > 0 &&
-                      parseInt(month) !== parseInt(formatMonthFromDate(paymentHistory[paymentHistory.length - 1].paymentDate)) &&
-                      emi.razorpay_id !== paymentHistory[paymentHistory.length - 1].razorpay_id
-                      ? [{
-                          date: formatDate(paymentHistory[paymentHistory.length - 1]?.paymentDate),
-                          installment: parseInt(month) + 1,
-                          amount: paymentHistory[paymentHistory.length - 1].amountPaid,
-                          paymentId: paymentHistory[paymentHistory.length - 1].razorpay_id,
-                        }]
-                      : []
-                    )
+                    parseInt(month) !==
+                      parseInt(
+                        formatMonthFromDate(
+                          paymentHistory[paymentHistory.length - 1].paymentDate
+                        )
+                      ) &&
+                    emi.razorpay_id !==
+                      paymentHistory[paymentHistory.length - 1].razorpay_id
+                      ? [
+                          {
+                            date: formatDate(
+                              paymentHistory[paymentHistory.length - 1]
+                                ?.paymentDate
+                            ),
+                            installment: parseInt(month) + 1,
+                            amount:
+                              paymentHistory[paymentHistory.length - 1]
+                                .amountPaid,
+                            paymentId:
+                              paymentHistory[paymentHistory.length - 1]
+                                .razorpay_id,
+                          },
+                        ]
+                      : []),
                   ]}
                   customerPhoto={customerDetails?.photoURL}
                   stampURL="https://ik.imagekit.io/xzgem7hpv/Ad%20FInance/stamp?updatedAt=1727545912474"
@@ -597,7 +913,10 @@ const EmiDetails = () => {
               <PDFDownloadLink
                 document={
                   <PaymentReceiptPDF
-                    customerName={`${customerDetails?.firstName} ${customerDetails?.lastName}` || user.email}
+                    customerName={
+                      `${customerDetails?.firstName} ${customerDetails?.lastName}` ||
+                      user.email
+                    }
                     customerId={customerDetails?.customerId || user.uid}
                     payments={[
                       {
@@ -607,25 +926,40 @@ const EmiDetails = () => {
                         paymentId: emi.razorpay_id,
                       },
                       ...(paymentHistory.length > 0 &&
-                        parseInt(month) !== parseInt(formatMonthFromDate(paymentHistory[paymentHistory.length - 1].paymentDate)) &&
-                        emi.razorpay_id !== paymentHistory[paymentHistory.length - 1].razorpay_id
+                      parseInt(month) !==
+                        parseInt(
+                          formatMonthFromDate(
+                            paymentHistory[paymentHistory.length - 1]
+                              .paymentDate
+                          )
+                        ) &&
+                      emi.razorpay_id !==
+                        paymentHistory[paymentHistory.length - 1].razorpay_id
                         ? [
                             {
-                              date: formatDate(paymentHistory[paymentHistory.length - 1].paymentDate),
+                              date: formatDate(
+                                paymentHistory[paymentHistory.length - 1]
+                                  .paymentDate
+                              ),
                               installment: parseInt(month) + 1,
-                              amount: paymentHistory[paymentHistory.length - 1].amountPaid,
-                              paymentId: paymentHistory[paymentHistory.length - 1].razorpay_id,
+                              amount:
+                                paymentHistory[paymentHistory.length - 1]
+                                  .amountPaid,
+                              paymentId:
+                                paymentHistory[paymentHistory.length - 1]
+                                  .razorpay_id,
                             },
                           ]
-                        : []
-                      )
+                        : []),
                     ]}
                     customerPhoto={customerDetails?.photoURL}
                     stampURL="https://ik.imagekit.io/xzgem7hpv/Ad%20FInance/stamp?updatedAt=1727545912474"
                     qrCodeData={qrCodeData}
                   />
                 }
-                fileName={`Payment receipt ${formatMonthFromDate(emi.paymentDate)}.pdf`}
+                fileName={`${
+                  customerDetails?.customerId || user.uid
+                }_${formatMonthFromDate(emi.paymentDate)}.pdf`}
               >
                 {({ loading }) =>
                   loading ? (
@@ -633,7 +967,14 @@ const EmiDetails = () => {
                       Generating PDF...
                     </Button>
                   ) : (
-                    <Button colorScheme="blue" mt={4}>
+                    <Button
+                      mt={4}
+                      variant="outline"
+                      colorScheme="green"
+                      size="sm"
+                      width={'100%'}
+                      leftIcon={<Icon as={LuDownload} color="green.500" />}
+                    >
                       Download Receipt
                     </Button>
                   )

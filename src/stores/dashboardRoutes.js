@@ -1,5 +1,6 @@
-import { FiCreditCard, FiDollarSign, FiFile, FiGrid, FiHelpCircle } from "react-icons/fi";
+import { FiCreditCard,  FiFile, FiGrid, FiHelpCircle } from "react-icons/fi";
 import { LuIndianRupee } from "react-icons/lu";
+import { SlNotebook } from "react-icons/sl";
 
 export const dashboardRoutes = [
 	{ icon: FiGrid, name: "Dashboard", path: "/dashboard" },
@@ -25,6 +26,8 @@ export const dashboardRoutes = [
 	  ]
 	},
 	{ icon: LuIndianRupee , name: "Payment History", path: "/payment-history" },
+	{ icon: SlNotebook  , name: "Passbook Create", path: "/passbook" },
+	{ icon: SlNotebook  , name: "No Dues", path: "/No-dues-form" },
   ];
   
   export const bottomRoutes = [

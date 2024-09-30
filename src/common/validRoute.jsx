@@ -11,6 +11,8 @@ import PaymentHistory from "../content/Paymenthistory.content";
 import HelpCenter from "../content/HelpCenter";
 import Profile from "../content/Profile";
 import ChangePass from "../content/ChangePass";
+import Passbook from "../content/Passbook";
+import NoDueForm from "../content/No_dues_form";
 
 
 
@@ -27,5 +29,7 @@ export const ValidAuthroutes = [
     { path: "/help-center", element: <HelpCenter/> },
     { path: "/customer-profile", element: <Profile/> },
     { path: "/change-password", element: <ChangePass/> },
+    { path: "/passbook", element: <Passbook/> },
+    { path: "/No-dues-form", element: <NoDueForm/> },
     { path: "/*", element: <NotFoundError /> },
 ];
