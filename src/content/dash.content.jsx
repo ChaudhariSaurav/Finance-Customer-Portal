@@ -266,7 +266,8 @@ const DashContent = () => {
                       value={calculateProgress()}
                       colorScheme="blue"
                       size="sm"
-                      thickness="4px"
+                      thickness="1px"
+                      borderRadius={20}
                       mt={4}
                     />
                     <Text mt={2} fontSize="md" fontWeight="bold">

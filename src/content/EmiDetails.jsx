@@ -16,6 +16,8 @@ import { LuChevronLeft, LuCreditCard, LuPrinter, LuCalendar, LuClock, LuDollarSi
 import { handlePayment, handlePaymentCallback } from "../service/auth";
 import { Document, Page, Text as PDFText, View, StyleSheet, PDFViewer, Image as PDFImage, PDFDownloadLink } from '@react-pdf/renderer';
 import { motion, AnimatePresence } from "framer-motion";
+import QRCode from 'qrcode';
+import ReactQRCode from 'react-qr-code';
 
 // Define styles for PDF
 const styles = StyleSheet.create({
@@ -99,12 +101,24 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     alignSelf: 'center',
   },
+  qrCode: {
+    position: 'absolute',
+    top: 30,
+    left: 30,
+    width: 100,
+    height: 100,
+  },
 });
 
 // PDF Document component
-const PaymentReceiptPDF = ({ customerName, customerId, payments, stampURL, customerPhoto }) => (
+const PaymentReceiptPDF = ({ customerName, customerId, payments, stampURL, customerPhoto, qrCodeData }) => (
   <Document>
     <Page size="A4" style={styles.page}>
+      {qrCodeData && (
+        <View style={styles.qrCode}>
+          <PDFImage src={qrCodeData} />
+        </View>
+      )}
       <PDFText style={styles.header}>J.R. GROUP'S MICROFINANCE</PDFText>
       <PDFText style={styles.subHeader1}>Basic Determination Of Microfinance</PDFText>
       <PDFText style={styles.subHeader}>NAME: {customerName}</PDFText>
@@ -149,11 +163,9 @@ const PaymentReceiptPDF = ({ customerName, customerId, payments, stampURL, custo
       <View style={styles.signatureRow}>
         <View style={styles.signatureBox}>
           <PDFText>B.M Signature</PDFText>
-          <PDFImage src="https://ik.imagekit.io/xzgem7hpv/Ad%20FInance/BM.png?updatedAt=1727546841801" style={{ width: 100, height: 40 }} />
         </View>
         <View style={styles.signatureBox}>
           <PDFText>A.M Signature</PDFText>
-          <PDFImage src="https://ik.imagekit.io/xzgem7hpv/Ad%20FInance/AM.png?updatedAt=1727546250723" style={{ width: 100, height: 40 }} />
         </View>
         <View style={styles.signatureBox}>
           <PDFText>Customer Signature</PDFText>
@@ -174,6 +186,7 @@ const EmiDetails = () => {
   const [showPDF, setShowPDF] = useState(false);
   const [paymentHistory, setPaymentHistory] = useState([]);
   const [customerDetails, setCustomerDetails] = useState(null);
+  const [qrCodeData, setQRCodeData] = useState(null);
   const user = useDataStore((state) => state.user);
   const toast = useToast();
   const navigate = useNavigate();
@@ -245,6 +258,30 @@ const EmiDetails = () => {
   useEffect(() => {
     fetchEmiDetails();
   }, [fetchEmiDetails]);
+
+  useEffect(() => {
+    const generateQR = async () => {
+      if (emi && customerDetails) {
+        const data = {
+          customerName: `${customerDetails?.firstName} ${customerDetails?.lastName}` || user.email,
+          customerId: customerDetails?.customerId || user.uid,
+          payments: [
+            {
+              date: formatDate(emi.paymentDate),
+              installment: month,
+              amount: emi.amountPaid || "",
+              paymentId: emi.razorpay_id,
+            },
+            // ... other payments ...
+          ],
+        };
+        const qrCode = await generateQRCode(data);
+        setQRCodeData(qrCode);
+      }
+    };
+
+    generateQR();
+  }, [customerDetails, emi, month, user.email]);
 
   const handleMakePayment = async () => {
     if (!user || !emi) return;
@@ -320,6 +357,26 @@ const EmiDetails = () => {
 
   const MotionBox = motion(Box);
 
+  const generateQRCode = async (data) => {
+    try {
+      const qrCodeDataURL = await QRCode.toDataURL(JSON.stringify(data));
+      return qrCodeDataURL;
+    } catch (error) {
+      console.error('Error generating QR code:', error);
+      return null;
+    }
+  };
+
+  const monthNames = [
+    "January", "February", "March", "April", "May", "June",
+    "July", "August", "September", "October", "November", "December"
+  ];
+  
+  const formatMonthFromDate = (dateString) => {
+    const date = new Date(dateString);
+    return monthNames[date.getMonth()];
+  };
+
   if (loading) {
     return (
       <AppLayout>
@@ -341,18 +398,6 @@ const EmiDetails = () => {
       </AppLayout>
     );
   }
-
-  // fior download option
-  const monthNames = [
-    "January", "February", "March", "April", "May", "June",
-    "July", "August", "September", "October", "November", "December"
-  ];
-  
-  const formatMonthFromDate = (dateString) => {
-    const date = new Date(dateString);
-    return monthNames[date.getMonth()];
-  };
-  
 
   return (
     <AppLayout>
@@ -417,7 +462,7 @@ const EmiDetails = () => {
                   {emi.status === "Paid" && (
                     <Stat>
                       <StatLabel>Payment ID</StatLabel>
-                      <StatNumber>{emi.paymentId}</StatNumber>
+                      <StatNumber>{emi.razorpay_id}</StatNumber>
                     </Stat>
                   )}
                 </VStack>
@@ -531,64 +576,72 @@ const EmiDetails = () => {
                       amount: emi.amountPaid || "",
                       paymentId: emi.razorpay_id,
                     },
-                    ...(paymentHistory.length > 0 ? [{
-                      date: formatDate(paymentHistory[paymentHistory.length - 1].paymentDate),
-                      installment: parseInt(month) + 1,
-                      amount: paymentHistory[paymentHistory.length - 1].amountPaid,
-                      paymentId: paymentHistory[paymentHistory.length - 1].razorpay_id,
-                    }] : [])
+                    ...(paymentHistory.length > 0 &&
+                      parseInt(month) !== parseInt(formatMonthFromDate(paymentHistory[paymentHistory.length - 1].paymentDate)) &&
+                      emi.razorpay_id !== paymentHistory[paymentHistory.length - 1].razorpay_id
+                      ? [{
+                          date: formatDate(paymentHistory[paymentHistory.length - 1]?.paymentDate),
+                          installment: parseInt(month) + 1,
+                          amount: paymentHistory[paymentHistory.length - 1].amountPaid,
+                          paymentId: paymentHistory[paymentHistory.length - 1].razorpay_id,
+                        }]
+                      : []
+                    )
                   ]}
                   customerPhoto={customerDetails?.photoURL}
                   stampURL="https://ik.imagekit.io/xzgem7hpv/Ad%20FInance/stamp?updatedAt=1727545912474"
+                  qrCodeData={qrCodeData}
                 />
               </PDFViewer>
 
               <PDFDownloadLink
                 document={
-              <PaymentReceiptPDF
-                customerName={`${customerDetails?.firstName} ${customerDetails?.lastName}` || user.email}
-                customerId={customerDetails?.customerId || user.uid}
-                payments={[
-                  {
-                    date: formatDate(emi.paymentDate),
-                    installment: month,
-                    amount: emi.amountPaid || "",
-                    paymentId: emi.razorpay_id,
-                  },
-                  ...(paymentHistory.length > 0
-                    ? [
-                        {
-                          date: formatDate(paymentHistory[paymentHistory.length - 1].paymentDate),
-                          installment: parseInt(month) + 1,
-                          amount: paymentHistory[paymentHistory.length - 1].amountPaid,
-                          paymentId: paymentHistory[paymentHistory.length - 1].razorpay_id,
-                        },
-                      ]
-                    : []),
-                ]}
-                customerPhoto={customerDetails?.photoURL}
-                stampURL="https://ik.imagekit.io/xzgem7hpv/Ad%20FInance/stamp?updatedAt=1727545912474"
-              />
-            }
-            // fileName="payment_receipt.pdf"
-            fileName={`Payment receipt ${formatMonthFromDate(emi.paymentDate)}.pdf`}
-          >
-            {({ loading }) =>
-              loading ? (
-                <Button isLoading colorScheme="blue" mt={4}>
-                  Generating PDF...
-                </Button>
-              ) : (
-                <Button colorScheme="blue" mt={4}>
-                  Download Receipt
-                </Button>
-              )
-            }
-          </PDFDownloadLink>
+                  <PaymentReceiptPDF
+                    customerName={`${customerDetails?.firstName} ${customerDetails?.lastName}` || user.email}
+                    customerId={customerDetails?.customerId || user.uid}
+                    payments={[
+                      {
+                        date: formatDate(emi.paymentDate),
+                        installment: month,
+                        amount: emi.amountPaid || "",
+                        paymentId: emi.razorpay_id,
+                      },
+                      ...(paymentHistory.length > 0 &&
+                        parseInt(month) !== parseInt(formatMonthFromDate(paymentHistory[paymentHistory.length - 1].paymentDate)) &&
+                        emi.razorpay_id !== paymentHistory[paymentHistory.length - 1].razorpay_id
+                        ? [
+                            {
+                              date: formatDate(paymentHistory[paymentHistory.length - 1].paymentDate),
+                              installment: parseInt(month) + 1,
+                              amount: paymentHistory[paymentHistory.length - 1].amountPaid,
+                              paymentId: paymentHistory[paymentHistory.length - 1].razorpay_id,
+                            },
+                          ]
+                        : []
+                      )
+                    ]}
+                    customerPhoto={customerDetails?.photoURL}
+                    stampURL="https://ik.imagekit.io/xzgem7hpv/Ad%20FInance/stamp?updatedAt=1727545912474"
+                    qrCodeData={qrCodeData}
+                  />
+                }
+                fileName={`Payment receipt ${formatMonthFromDate(emi.paymentDate)}.pdf`}
+              >
+                {({ loading }) =>
+                  loading ? (
+                    <Button isLoading colorScheme="blue" mt={4}>
+                      Generating PDF...
+                    </Button>
+                  ) : (
+                    <Button colorScheme="blue" mt={4}>
+                      Download Receipt
+                    </Button>
+                  )
+                }
+              </PDFDownloadLink>
             </ModalBody>
           </ModalContent>
         </Modal>
-    
       </Container>
     </AppLayout>
   );

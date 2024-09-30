@@ -17,7 +17,7 @@ import useDataStore from "../zustand/userDataStore";
 
 // Function to add notification
 const addNotification = async (userId, title, description) => {
-	const notificationId = new Date().getTime(); // Using timestamp as a unique ID
+	const notificationId = new Date().getTime(); // Unique ID using timestamp
 	const timestamp = new Date().toISOString();
 
 	const notificationData = {
@@ -29,11 +29,25 @@ const addNotification = async (userId, title, description) => {
 	};
 
 	try {
+		// Add notification to the database
 		await set(ref(database, `users/${userId}/notifications/${notificationId}`), notificationData);
+
+		// Set a timeout to auto-remove the notification after 30 minutes (1800000 milliseconds)
+		setTimeout(async () => {
+			try {
+				// Remove the notification from the database
+				await remove(ref(database, `users/${userId}/notifications/${notificationId}`));
+				console.log(`Notification ${notificationId} removed after 30 minutes.`);
+			} catch (removeError) {
+				console.error("Error removing notification:", removeError);
+			}
+		}, 1800000); // 30 minutes in milliseconds
+
 	} catch (error) {
 		console.error("Error adding notification:", error);
 	}
 };
+
 
 // Generate customer ID
 const generateCustomerId = (loanType, totalEmiMonths, currentYear, firstName, lastName, UserPosition) => {
@@ -152,9 +166,6 @@ const createInitialInstallment = async (uid, loanValue, totalEmiMonths, userPosi
 	await set(installmentRef, installments);
 };
 
-
-
-// Handle file uploads
 const handleUploadFiles = async (filesArray, user, documentType, userDetails) => {
 	try {
 		const docRef = ref(database, `users/${user.uid}/documents/${documentType}`);
@@ -202,8 +213,6 @@ const getUserIpAddress = async () => {
 		return null; // Return null if there's an error
 	}
 };
-
-// if remove document
 const removeDocument = async (uid, documentType) => {
 	const userRef = ref(database, `users/${uid}`);
 	const userSnapshot = await get(userRef);
@@ -223,7 +232,6 @@ const removeDocument = async (uid, documentType) => {
 	});
 };
 
-// Register user
 const registerUser = async (
 	email,
 	password,
@@ -323,7 +331,7 @@ const registerUser = async (
 		await set(ref(database, `users/${uid}`), userData);
 		//   await createInitialInstallment(uid, loanValue, parseInt(totalEmiMonths), gender);
 		await createInitialInstallment(uid, loanValue, parseInt(totalEmiMonths), UserPosition);
-		await addNotification(uid, "Registration Successful", "Welcome Ad finance customer portal, " + firstName + "!");
+		await addNotification(uid, "Registration Successful", "Hello, " + firstName + "!");
 
 		return { user: { id: uid, name: firstName, email: user.email || '' }, customerId };
 	} catch (error) {
@@ -350,7 +358,6 @@ const userLoginByEmail = async (email, password) => {
 		await set(userRef, { ...userData, isLoggedIn: true });
 		const emailLoggedinuser = userCredential.user;
 		useDataStore.getState().setUser(emailLoggedinuser);
-		await addNotification(emailLoggedinuser.uid, `Welcome Back!", "We're glad to see you again! ${emailLoggedinuser.firstName}`);
 
 		window.location.replace("/dashboard");
 
@@ -360,7 +367,6 @@ const userLoginByEmail = async (email, password) => {
 		throw error;
 	}
 };
-
 const userLoginByCustomerID = async (customerId, password) => {
 	try {
 		const usersRef = ref(database, 'users');
@@ -390,7 +396,6 @@ const userLoginByCustomerID = async (customerId, password) => {
 		throw error;
 	}
 };
-
 export const fetchAllUsers = async () => {
 	try {
 		const usersRef = ref(database, 'users/');
@@ -453,8 +458,6 @@ const userSignOut = async () => {
 		handleLoginError(error);
 	}
 };
-
-// Handle forgot password
 const handleForgotPassword = async (email) => {
 	try {
 		const userRef = ref(database, `users`);
@@ -485,8 +488,6 @@ const handleForgotPassword = async (email) => {
 		}
 	}
 };
-
-
 export const handlePaymentCallback = async (paymentDetails, uid, installmentMonth, amount, showToast) => {
 	const installmentRef = ref(database, `CustomerInstallment/${uid}/${installmentMonth}`);
 	const userRef = ref(database, `users/${uid}`);
@@ -558,22 +559,18 @@ export const handlePaymentCallback = async (paymentDetails, uid, installmentMont
 			totalMonthsPaid,
 			totalAmountPaid, // Save the updated total amount paid
 			paidMonths,
-			nextDueDate: nextDueDateString, // Save the next due date for the user
+			nextDueDate: nextDueDateString,
 		});
 
 		if (showToast) {
 			showToast({
 				title: "Payment Updated",
-				description: `Payment for month ${installmentMonth} has been recorded successfully. Your next due date is ${nextDueDateString}.`,
+				description: `RS ${amount},  Amount paid successfully. Your next due date is ${nextDueDateString}.`,
 				status: "success",
 				duration: 5000,
 				isClosable: true,
 			});
 		}
-
-		await addNotification(uid, "Payment Successful", `Your payment for month ${installmentMonth} has been recorded successfully. Next due date is ${nextDueDateString}.`);
-
-		// Redirect to the EMI payment page after a short delay
 		setTimeout(() => {
 			window.location.replace(`/emi/pay`); // Adjust the URL as needed
 		}, 5000);
@@ -593,8 +590,6 @@ export const handlePaymentCallback = async (paymentDetails, uid, installmentMont
 		throw new Error("Failed to update payment information. Please try again.");
 	}
 };
-
-
 export const handlePayment = async (uid, installmentMonth, amount, showToast) => {
 	const loadScript = (src) => {
 		return new Promise((resolve, reject) => {
@@ -651,8 +646,6 @@ export const handlePayment = async (uid, installmentMonth, amount, showToast) =>
 		throw new Error("Failed to initialize payment. Please try again.");
 	}
 };
-
-
 const changeUserPassword = async (customerId, oldPassword, newPassword) => {
 	try {
 		const allUsers = await fetchAllUsers();
@@ -679,8 +672,6 @@ const changeUserPassword = async (customerId, oldPassword, newPassword) => {
 		throw new Error(error.message || "An error occurred while changing the password.");
 	}
 };
-
-
 const handleForgotCustomerId = async (email) => {
 	try {
 		const userRef = ref(database, `users`);
