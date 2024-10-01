@@ -427,6 +427,32 @@ const handleLoginError = (error) => {
 			alert("An error occurred during login. Please try again.");
 	}
 };
+
+// const listenForUserStatus = (uid) => {
+//     const userRef = ref(database, `users/${uid}`);
+
+//     onValue(userRef, (snapshot) => {
+//         const data = snapshot.val();
+//         if (data && !data.isLoggedIn) {
+//             console.log("User logged out from another device. Logging out...");
+// 			throw new Error("User logged out from another device. Logging out...")
+//             signOut(auth)
+//                 .then(() => {
+//                     useDataStore.getState().clearUser();
+//                     localStorage.removeItem("UserData");
+//                     localStorage.clear();
+//                     window.location.replace("/");
+//                 })
+//                 .catch(handleLoginError);
+//         }
+//     });
+// };
+
+// const user = auth.currentUser;
+// if (user) {
+//     listenForUserStatus(user.uid);
+// }
+
 const userSignOut = async () => {
 	try {
 		const user = auth.currentUser;

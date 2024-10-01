@@ -23,37 +23,48 @@ import {
   Link,
   Tooltip,
   ScaleFade,
+  Modal,
+  ModalOverlay,
+  ModalContent,
+  ModalHeader,
+  ModalBody,
+  ModalFooter,
+  FormControl,
+  FormLabel,
+  Input,
+  useToast,
 } from "@chakra-ui/react";
-import { 
-  LuMoon, 
-  LuSun, 
-  LuMenu, 
-  LuPhone, 
-  LuMail, 
-  LuMapPin, 
-  LuFacebook, 
-  LuTwitter, 
-  LuInstagram, 
-  LuLinkedin, 
-  LuIndianRupee, 
-  LuTrendingUp, 
-  LuBriefcase, 
+import {
+  LuMoon,
+  LuSun,
+  LuMenu,
+  LuPhone,
+  LuMail,
+  LuMapPin,
+  LuFacebook,
+  LuTwitter,
+  LuInstagram,
+  LuLinkedin,
+  LuIndianRupee,
+  LuTrendingUp,
+  LuBriefcase,
   LuUmbrella,
-  LuArrowUp
+  LuArrowUp,
 } from "react-icons/lu";
 
 function HomePage() {
   const { colorMode, toggleColorMode } = useColorMode();
   const { isOpen, onOpen, onClose } = useDisclosure();
   const [scrollPosition, setScrollPosition] = useState(0);
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const toast = useToast();
   const bgColor = useColorModeValue("gray.50", "gray.900");
   const textColor = useColorModeValue("gray.600", "gray.300");
   const headingColor = useColorModeValue("blue.600", "blue.300");
   const cardBg = useColorModeValue("white", "gray.800");
-  const gradientBg = useColorModeValue(
-    "gray.100",
-    "#0f1016"
-  );
+  const gradientBg = useColorModeValue("gray.100", "#0f1016");
+  const predefinedPassword = "JIYARANI04.02.2024"; 
 
   useEffect(() => {
     const handleScroll = () => {
@@ -72,29 +83,40 @@ function HomePage() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  
-
-  const CustomHeading = ({ headingColor }) => {
-	return (
-	  <Heading
-		as="h2"
-		size="3xl"
-		mb={4}
-		color={headingColor}
-		sx={{
-			textShadow: `
-			5px 2px 2px rgba(0, 41, 0, 0.7), 
-			5px 2px 4px rgba(0, 0, 0, 0.5), 
-			5px 2px 4px rgba(0, 255, 0, 0.3)
-		  `,
-		}}
-	  >
-		Financial Solutions for Your Success
-	  </Heading>
-	);
+  const handlePasswordSubmit = () => {
+    if (password === predefinedPassword) {
+      window.location.href = "/auth"; // Redirect to your desired page
+    } else {
+      setError("Authentication Error: Incorrect Password");
+      toast({
+        title: "Authentication Error",
+        description: "Incorrect Password. Please try again.",
+        status: "error",
+        duration: 3000,
+        isClosable: true,
+      });
+      setPassword("");
+    }
   };
-  
- 
+
+  const CustomHeading = ({ headingColor }) => (
+    <Heading
+      as="h2"
+      size="3xl"
+      mb={4}
+      color={headingColor}
+      sx={{
+        textShadow: `
+        5px 2px 2px rgba(0, 41, 0, 0.7), 
+        5px 2px 4px rgba(0, 0, 0, 0.5), 
+        5px 2px 4px rgba(0, 255, 0, 0.3)
+      `,
+      }}
+    >
+      Financial Solutions for Your Success
+    </Heading>
+  );
+
   const MenuItems = () => (
     <>
       <Button as={Link} href="#services" variant="ghost">
@@ -111,9 +133,6 @@ function HomePage() {
       </Button>
     </>
   );
-  const handleLogin = () => {
-    window.location.href = "/auth";
-  };
 
   return (
     <Box bg={bgColor} minH="100vh">
@@ -143,7 +162,7 @@ function HomePage() {
       </Box>
 
       {/* Mobile Drawer */}
-      <Drawer isOpen={isOpen} placement="right" onClose={onClose}>
+      {/* <Drawer isOpen={isOpen} placement="right" onClose={onClose}>
         <DrawerOverlay />
         <DrawerContent>
           <DrawerCloseButton />
@@ -157,21 +176,21 @@ function HomePage() {
             </VStack>
           </DrawerBody>
         </DrawerContent>
-      </Drawer>
+      </Drawer> */}
 
       {/* Hero Section */}
       <Box textAlign="center" py={20} px={6} bgGradient={gradientBg}>
-	  <CustomHeading headingColor="purple.100" />
-			
+        <CustomHeading headingColor="purple.100" />
+
         <Text fontSize="xl" color={textColor} maxW="2xl" mx="auto">
           Empowering individuals and businesses with personalized financial strategies since 2024.
         </Text>
-        <Button 
-          colorScheme="blue" 
-          mt={8} 
-          size="lg" 
-          shadow="md" 
-          onClick={handleLogin} 
+        <Button
+          colorScheme="blue"
+          mt={8}
+          size="lg"
+          shadow="md"
+          onClick={onOpen} // Open the password modal
           _hover={{ transform: "translateY(-2px)", shadow: "lg" }}
         >
           Get Started
@@ -198,6 +217,34 @@ function HomePage() {
         </Stack>
       </Box>
 
+      {/* Password Modal */}
+      <Modal isOpen={isOpen} onClose={onClose}>
+        <ModalOverlay />
+        <ModalContent>
+          <ModalHeader>Enter Password</ModalHeader>
+          <ModalBody>
+            <FormControl>
+              <FormLabel>Password</FormLabel>
+              <Input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                isInvalid={!!error}
+              />
+              {error && <Text color="red.500">{error}</Text>}
+            </FormControl>
+          </ModalBody>
+          <ModalFooter>
+            <Button colorScheme="blue" onClick={handlePasswordSubmit}>
+              Submit
+            </Button>
+            <Button onClick={onClose} ml={3}>
+              Cancel
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
+
       {/* Services Section */}
       <Box py={16} px={8} textAlign="center" id="services" bgGradient={gradientBg}>
         <Heading as="h3" size="2xl" mb={12} color={headingColor}>
@@ -205,8 +252,8 @@ function HomePage() {
         </Heading>
         <Stack direction={["column", null, "row"]} spacing={8} justify="center">
           {[
-            { title: "Wealth Management", icon: LuIndianRupee, description: "Tailored strategies to help you grow, manage, and preserve your wealth." },
-            { title: "Investment Advisory", icon: LuTrendingUp, description: "Expert advice on investment opportunities that align with your goals." },
+            { title: "Wealth Management", icon: LuIndianRupee, description: "Tailored strategies to help you grow and manage your wealth." },
+            { title: "Investment Advice", icon: LuTrendingUp, description: "Expert advice on investment opportunities that align with your goals." },
             { title: "Retirement Planning", icon: LuUmbrella, description: "Plan a secure and fulfilling retirement with confidence." },
             { title: "Business Financing", icon: LuBriefcase, description: "Flexible financing solutions to fuel your business growth." }
           ].map((service, index) => (
@@ -257,11 +304,11 @@ function HomePage() {
         <Text fontSize="xl" color={textColor} maxW="2xl" mx="auto" mb={8}>
           Discover how AD Finance can transform your financial aspirations into reality. Contact us today!
         </Text>
-        <Button 
-          colorScheme="blue" 
-          size="lg" 
-          shadow="md" 
-          _hover={{ transform: "translateY(-2px)", shadow: "lg" }} 
+        <Button
+          colorScheme="blue"
+          size="lg"
+          shadow="md"
+          _hover={{ transform: "translateY(-2px)", shadow: "lg" }}
           leftIcon={<LuPhone />}
         >
           Contact Us
